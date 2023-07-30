@@ -6,7 +6,7 @@ from stockfish import Stockfish
 import websockets
 
 JOIN = {}
-stockfish = Stockfish(path="./stockfish_15_x64_avx2.exe")
+# stockfish = Stockfish(path="./stockfish_15_x64_avx2.exe")
 
 async def play(websocket, b, connected):
   async for message in websocket:

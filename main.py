@@ -4,7 +4,7 @@ import json
 import os
 import secrets
 import signal
-from stockfish import Stockfish
+# from stockfish import Stockfish
 import websockets
 
 JOIN = {}

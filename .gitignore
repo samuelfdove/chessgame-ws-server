@@ -4,3 +4,4 @@ node_modules
 connect4_example
 __pycache__
 src/
+test.py

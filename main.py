@@ -6,33 +6,34 @@ import secrets
 import signal
 # from stockfish import Stockfish
 import websockets
+from chessgame import Game
 
 JOIN = {}
 # stockfish = Stockfish(path="./stockfish_15_x64_avx2.exe")
 
-async def play(websocket, b, connected):
+async def play(websocket, g, connected):
   async for message in websocket:
     event = json.loads(message)
     if event["type"]=="newgame":
-      b.reset()
-      await websocket.send(json.dumps({"type": "fen","value": b.fen()}))
+      g.b.reset()
     else:
        move = event['from']+event['to']
-       b.push(chess.Move.from_uci(move))
-       websockets.broadcast(connected, json.dumps({"type": "fen","value": b.fen()}))
+       g.b.push(chess.Move.from_uci(move))
+       g.aftermove()
+    websockets.broadcast(connected, json.dumps({"type": "boardupdate","fen": g.b.fen(), "dests": g.getlegalmoves()}))
 
 async def start(websocket, event):
    event_id = event["id"]
    if event_id in JOIN:
       await websocket.send(json.dumps({"type": "gameconfirmation", "value": "false"}))
    else:
-      await websocket.send(json.dumps({"type": "gameconfirmation", "value": "true", "orientation": "white"}))
-      b = chess.Board()
+      g = Game(event["config"])
+      await websocket.send(json.dumps({"type": "gameconfirmation", "value": "true", "orientation": g.p1orientation, "FEN": g.b.fen(), "dests": g.getlegalmoves()}))
       connected = {websocket}
-      JOIN[event_id] = b,connected
+      JOIN[event_id] = g,connected
       try:
          print('player1 started game')
-         await play(websocket,b,connected)
+         await play(websocket,g,connected)
       finally:
          print("player1left?")
          del JOIN[event_id]
@@ -40,13 +41,13 @@ async def start(websocket, event):
 
 async def joingame(websocket,event):
    if event["id"] in JOIN:
-      await websocket.send(json.dumps({"type": "gameconfirmation", "value": "true", "orientation": "black"}))
+      g,connected= JOIN[event["id"]]
+      await websocket.send(json.dumps({"type": "gameconfirmation", "value": "true", "orientation": g.p2orientation, "FEN": g.b.fen(), "dests": g.getlegalmoves()}))
       
-      b,connected= JOIN[event["id"]]
       connected.add(websocket)
       try:
          print('player2 joined')
-         await play(websocket,b,connected)
+         await play(websocket,g,connected)
       finally:
          print('player2left?')
          connected.remove(websocket)

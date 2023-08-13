@@ -20,27 +20,38 @@ async def play(websocket, b, connected):
        move = event['from']+event['to']
        b.push(chess.Move.from_uci(move))
        websockets.broadcast(connected, json.dumps({"type": "fen","value": b.fen()}))
-       
 
-async def start(websocket):
-  b = chess.Board()
-  connected = {websocket}
-  joinkey = "test"
-  JOIN[joinkey] = b,connected
-  print('player1 started game')
-  await play(websocket,b,connected)
-  print("player1left?")
+async def start(websocket, event):
+   event_id = event["id"]
+   if event_id in JOIN:
+      await websocket.send(json.dumps({"type": "gameconfirmation", "value": "false"}))
+   else:
+      await websocket.send(json.dumps({"type": "gameconfirmation", "value": "true", "orientation": "white"}))
+      b = chess.Board()
+      connected = {websocket}
+      JOIN[event_id] = b,connected
+      try:
+         print('player1 started game')
+         await play(websocket,b,connected)
+      finally:
+         print("player1left?")
+         del JOIN[event_id]
   
 
-async def joingame(websocket,joinkey="test"):
-   b,connected= JOIN[joinkey]
-   connected.add(websocket)
-   try:
-      print('player2 joined')
-      await play(websocket,b,connected)
-   finally:
-      print('player2left?')
-      connected.remove(websocket)
+async def joingame(websocket,event):
+   if event["id"] in JOIN:
+      await websocket.send(json.dumps({"type": "gameconfirmation", "value": "true", "orientation": "black"}))
+      
+      b,connected= JOIN[event["id"]]
+      connected.add(websocket)
+      try:
+         print('player2 joined')
+         await play(websocket,b,connected)
+      finally:
+         print('player2left?')
+         connected.remove(websocket)
+   else:
+      await websocket.send(json.dumps({"type": "gameconfirmation", "value": "false"}))
    
 
 
@@ -49,9 +60,9 @@ async def handler(websocket):
    message = await websocket.recv()
    event = json.loads(message)
    if event["type"]=="joingame":
-      await joingame(websocket)
+      await joingame(websocket, event)
    else:
-      await start(websocket)
+      await start(websocket, event)
         
 
         
@@ -67,6 +78,11 @@ async def main():
     async with websockets.serve(handler, "", port):
         await asyncio.Future()  # run forever
 
+async def mainlocal():
+   port = int(os.environ.get("PORT", "8001"))
+   async with websockets.serve(handler, "", port):
+      await asyncio.Future()  # run forever
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+   asyncio.run(mainlocal())

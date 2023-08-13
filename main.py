@@ -9,8 +9,10 @@ import websockets
 from chessgame import Game
 
 JOIN = {}
-# stockfish = Stockfish(path="./stockfish-ubuntu-x86-64-avx2")
-stockfish = Stockfish(path="./stockfish_15_x64_avx2.exe")
+
+print(os.listdir())
+stockfish = Stockfish(path="./stockfish-ubuntu-x86-64-avx2")
+# stockfish = Stockfish(path="./stockfish_15_x64_avx2.exe")
 
 async def play(websocket, g, connected):
   async for message in websocket:

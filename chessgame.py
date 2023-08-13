@@ -2,7 +2,7 @@ import chess
 import random
 
 class Game:
-    def __init__(self,config):
+    def __init__(self,config, stockfish):
         self.b = chess.Board(config["FEN"])
         self.p1orientation = config["orientation"]
         if self.p1orientation=="white":
@@ -21,6 +21,7 @@ class Game:
            self.blackrandom = config["p1random"]
            self.whitecomputer = config["p2computer"]
            self.blackcomputer = config["p1computer"]
+        self.stockfish=stockfish
         
         
     
@@ -37,7 +38,8 @@ class Game:
        self.b.push(random.choice(list(self.b.legal_moves)))
     
     def makecomputermove(self):
-       pass
+       self.stockfish.set_fen_position(self.b.fen())
+       self.b.push(chess.Move.from_uci(self.stockfish.get_best_move()))
     
     def aftermove(self):
        if self.b.turn:

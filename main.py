@@ -4,11 +4,12 @@ import json
 import os
 import secrets
 import signal
-# from stockfish import Stockfish
+from stockfish import Stockfish
 import websockets
 from chessgame import Game
 
 JOIN = {}
+stockfish = Stockfish(path="stockfish-ubuntu-x86-64-avx2")
 # stockfish = Stockfish(path="./stockfish_15_x64_avx2.exe")
 
 async def play(websocket, g, connected):
@@ -27,7 +28,7 @@ async def start(websocket, event):
    if event_id in JOIN:
       await websocket.send(json.dumps({"type": "gameconfirmation", "value": "false"}))
    else:
-      g = Game(event["config"])
+      g = Game(event["config"], stockfish)
       await websocket.send(json.dumps({"type": "gameconfirmation", "value": "true", "orientation": g.p1orientation, "FEN": g.b.fen(), "dests": g.getlegalmoves()}))
       connected = {websocket}
       JOIN[event_id] = g,connected
@@ -86,4 +87,5 @@ async def mainlocal():
 
 
 if __name__ == "__main__":
+   stockfish = Stockfish(path="./stockfish_15_x64_avx2.exe")
    asyncio.run(mainlocal())

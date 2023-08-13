@@ -38,8 +38,9 @@ class Game:
        self.b.push(random.choice(list(self.b.legal_moves)))
     
     def makecomputermove(self):
-       self.stockfish.set_fen_position(self.b.fen())
-       self.b.push(chess.Move.from_uci(self.stockfish.get_best_move()))
+      #  self.stockfish.set_fen_position(self.b.fen())
+      #  self.b.push(chess.Move.from_uci(self.stockfish.get_best_move()))
+       pass
     
     def aftermove(self):
        if self.b.turn:

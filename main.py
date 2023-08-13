@@ -89,5 +89,5 @@ async def mainlocal():
 
 
 if __name__ == "__main__":
-   stockfish = Stockfish(path="./stockfish_15_x64_avx2.exe")
+   # stockfish = Stockfish(path="./stockfish_15_x64_avx2.exe")
    asyncio.run(mainlocal())

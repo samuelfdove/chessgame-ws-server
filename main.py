@@ -17,20 +17,32 @@ print(os.listdir())
 async def play(websocket, g, connected):
   async for message in websocket:
     event = json.loads(message)
-    if event["type"]=="newgame":
+    eventtype = event["type"]
+    if eventtype=="newgame":
       g.b.reset()
-    else:
+      websockets.broadcast(connected, json.dumps({"type": "boardupdate","fen": g.b.fen(), "dests": g.getlegalmoves()}))
+    elif eventtype == "move":
        move = event['from']+event['to']
        g.b.push(chess.Move.from_uci(move))
        g.aftermove()
-    websockets.broadcast(connected, json.dumps({"type": "boardupdate","fen": g.b.fen(), "dests": g.getlegalmoves()}))
+       if g.needtosendMessage:
+          websockets.broadcast(connected, json.dumps({"type": "chatmessage","value": g.message}))
+          g.message = ""
+          g.needtosendMessage = False
+       websockets.broadcast(connected, json.dumps({"type": "boardupdate","fen": g.b.fen(), "dests": g.getlegalmoves()}))
+    elif eventtype=="newmessage":
+       websockets.broadcast(connected, json.dumps({"type": "chatmessage","value": event["value"]}))
+       if g.awaitingMessage:
+          websockets.broadcast(connected,json.dumps({"type": "chatmessage", "value": g.processmessage(event["value"])}))
+          websockets.broadcast(connected, json.dumps({"type": "boardupdate","fen": g.b.fen(), "dests": g.getlegalmoves()}))
+
 
 async def start(websocket, event):
    event_id = event["id"]
    if event_id in JOIN:
       await websocket.send(json.dumps({"type": "gameconfirmation", "value": "false"}))
    else:
-      g = Game(event["config"], stockfish)
+      g = Game(event["config"], "stockfish")
       await websocket.send(json.dumps({"type": "gameconfirmation", "value": "true", "orientation": g.p1orientation, "FEN": g.b.fen(), "dests": g.getlegalmoves()}))
       connected = {websocket}
       JOIN[event_id] = g,connected

@@ -42,7 +42,7 @@ async def start(websocket, event):
    if event_id in JOIN:
       await websocket.send(json.dumps({"type": "gameconfirmation", "value": "false"}))
    else:
-      g = Game(event["config"], stockfish)
+      g = Game(event["config"])
       await websocket.send(json.dumps({"type": "gameconfirmation", "value": "true", "orientation": g.p1orientation, "FEN": g.b.fen(), "dests": g.getlegalmoves()}))
       connected = {websocket}
       JOIN[event_id] = g,connected

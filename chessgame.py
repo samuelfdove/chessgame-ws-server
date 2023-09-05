@@ -2,7 +2,7 @@ import chess
 import random
 
 class Game:
-    def __init__(self,config, stockfish):
+    def __init__(self,config):
         self.b = chess.Board(config["FEN"])
         self.awaitingMessage = False
         self.needtosendMessage = False
@@ -29,7 +29,6 @@ class Game:
            self.blackcomputer = config["p1computer"]
            self.whitechoosepiece = config["p2choosepiece"]
            self.blackchoosepiece = config["p1choosepiece"]
-        self.stockfish=stockfish
         
         
     

@@ -14,7 +14,7 @@ print(os.listdir())
 # stockfish = Stockfish(path="./stockfish-ubuntu-x86-64-avx2")
 # stockfish = Stockfish(path="./stockfish_15_x64_avx2.exe")
 
-async def play(websocket, g, connected):
+async def play(websocket, g, connected, players):
   async for message in websocket:
     event = json.loads(message)
     eventtype = event["type"]
@@ -26,16 +26,10 @@ async def play(websocket, g, connected):
        g.b.push(chess.Move.from_uci(move))
        g.aftermove()
        if g.needtosendMessage:
-          if (g.b.turn is (g.p1orientation=="white")):
-             i = 0 #this is shit
-             ws = 0
-             for j in connected:
-                if i==1:
-                   ws = j
-                i+=1
-             await ws.send(json.dumps({"type": "chatmessage","value": g.message}))
+          if (g.b.turn and (g.p1orientation=="white")) or (not g.b.turn and (g.p1orientation=="black")):
+             await players["p1ws"].send(json.dumps({"type": "chatmessage","value": g.message}))
           else:
-             await next(iter(connected)).send(json.dumps({"type": "chatmessage","value": g.message}))
+             await players["p2ws"].send(json.dumps({"type": "chatmessage","value": g.message}))
 
           g.message = ""
           g.needtosendMessage = False
@@ -56,12 +50,13 @@ async def start(websocket, event):
       g = Game(event["config"])
       await websocket.send(json.dumps({"type": "gameconfirmation", "value": "true", "orientation": g.p1orientation, "FEN": g.b.fen(), "dests": g.getlegalmoves()}))
       connected = {websocket}
-      JOIN[event_id] = g,connected
+      players = {"p1ws": websocket}
+      JOIN[event_id] = g,connected,players
       print(connected)
       print(type(connected))
       try:
          print('player1 started game')
-         await play(websocket,g,connected)
+         await play(websocket,g,connected,players)
       finally:
          print("player1left?")
          del JOIN[event_id]
@@ -69,13 +64,14 @@ async def start(websocket, event):
 
 async def joingame(websocket,event):
    if event["id"] in JOIN:
-      g,connected= JOIN[event["id"]]
+      g,connected,players= JOIN[event["id"]]
       await websocket.send(json.dumps({"type": "gameconfirmation", "value": "true", "orientation": g.p2orientation, "FEN": g.b.fen(), "dests": g.getlegalmoves()}))
       
       connected.add(websocket)
+      players["p2ws"] = websocket
       try:
          print('player2 joined')
-         await play(websocket,g,connected)
+         await play(websocket,g,connected,players)
       finally:
          print('player2left?')
          connected.remove(websocket)

@@ -27,9 +27,9 @@ async def play(websocket, g, connected, players):
        g.aftermove()
        if g.needtosendMessage:
           if (g.b.turn and (g.p1orientation=="white")) or (not g.b.turn and (g.p1orientation=="black")):
-             await players["p1ws"].send(json.dumps({"type": "chatmessage","value": g.message}))
-          else:
              await players["p2ws"].send(json.dumps({"type": "chatmessage","value": g.message}))
+          else:
+             await players["p1ws"].send(json.dumps({"type": "chatmessage","value": g.message}))
 
           g.message = ""
           g.needtosendMessage = False

@@ -26,9 +26,20 @@ async def play(websocket, g, connected):
        g.b.push(chess.Move.from_uci(move))
        g.aftermove()
        if g.needtosendMessage:
-          websockets.broadcast(connected, json.dumps({"type": "chatmessage","value": g.message}))
+          if (g.b.turn is (g.p1orientation=="white")):
+             await next(iter(connected)).send(json.dumps({"type": "chatmessage","value": g.message}))
+          else:
+             i = 0 #this is shit
+             ws = 0
+             for j in connected:
+                if i==1:
+                   ws = j
+                i+=1
+                
+             await ws.send(json.dumps({"type": "chatmessage","value": g.message}))
           g.message = ""
           g.needtosendMessage = False
+          
        websockets.broadcast(connected, json.dumps({"type": "boardupdate","fen": g.b.fen(), "dests": g.getlegalmoves()}))
     elif eventtype=="newmessage":
        websockets.broadcast(connected, json.dumps({"type": "chatmessage","value": event["value"]}))
@@ -46,6 +57,8 @@ async def start(websocket, event):
       await websocket.send(json.dumps({"type": "gameconfirmation", "value": "true", "orientation": g.p1orientation, "FEN": g.b.fen(), "dests": g.getlegalmoves()}))
       connected = {websocket}
       JOIN[event_id] = g,connected
+      print(connected)
+      print(type(connected))
       try:
          print('player1 started game')
          await play(websocket,g,connected)
